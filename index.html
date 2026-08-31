@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha Médica - Verificación y Validación</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); overflow: hidden; }
+        header { background: #1565c0; color: #fff; padding: 24px; text-align: center; }
+        header h1 { font-size: 1.6rem; margin-bottom: 6px; }
+        header p { font-size: 0.9rem; opacity: 0.9; }
+        .content { padding: 24px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .full { grid-column: 1 / -1; }
+        label { display: block; font-weight: 600; color: #37474f; margin-bottom: 4px; font-size: 0.9rem; }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #cfd8dc; border-radius: 6px; font-size: 0.95rem; transition: border-color 0.2s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #1565c0; }
+        .error { border-color: #d32f2f !important; background: #ffebee; }
+        .error-msg { color: #d32f2f; font-size: 0.8rem; margin-top: 4px; display: none; }
+        .btns { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        button { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: transform 0.1s, opacity 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-guardar { background: #2e7d32; color: #fff; }
+        .btn-guardar:hover { background: #1b5e20; }
+        .btn-limpiar { background: #f9a825; color: #fff; }
+        .btn-limpiar:hover { background: #f57f17; }
+        .btn-cerrar { background: #c62828; color: #fff; }
+        .btn-cerrar:hover { background: #b71c1c; }
+        .btn-buscar { background: #1565c0; color: #fff; }
+        .btn-buscar:hover { background: #0d47a1; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .search-box input { flex: 1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.9rem; }
+        th, td { padding: 10px; border: 1px solid #e0e0e0; text-align: left; }
+        th { background: #1565c0; color: #fff; }
+        tr:nth-child(even) { background: #f5f5f5; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #323232; color: #fff; padding: 14px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; z-index: 1000; }
+        .toast.success { background: #2e7d32; }
+        .toast.error { background: #c62828; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal { background: #fff; padding: 24px; border-radius: 8px; max-width: 400px; width: 90%; text-align: center; }
+        .modal h3 { margin-bottom: 12px; color: #1565c0; }
+        .modal p { margin-bottom: 20px; color: #555; }
+        .modal-btns { display: flex; gap: 10px; justify-content: center; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Ficha Médica Electrónica</h1>
+            <p>Taller de Testing y Calidad de Software — Semana 3</p>
+        </header>
+        <div class="content">
+            <div class="search-box">
+                <input type="text" id="buscarApellido" placeholder="Buscar por apellido...">
+                <button class="btn-buscar" onclick="buscarPorApellido()">Buscar</button>
+                <button class="btn-limpiar" onclick="limpiarBusqueda()">Mostrar Todo</button>
+            </div>
+
+            <form id="fichaForm" onsubmit="event.preventDefault();">
+                <div class="grid">
+                    <div>
+                        <label for="rut">Rut *</label>
+                        <input type="text" id="rut" placeholder="Ej: 12.345.678-9" onblur="validarRut(this.value)">
+                        <span class="error-msg" id="err-rut">Rut inválido. Formato: 12.345.678-9</span>
+                    </div>
+                    <div>
+                        <label for="nombres">Nombres *</label>
+                        <input type="text" id="nombres" placeholder="Ej: Juan Andrés">
+                        <span class="error-msg" id="err-nombres">Campo obligatorio. Solo letras.</span>
+                    </div>
+                    <div>
+                        <label for="apellidos">Apellidos *</label>
+                        <input type="text" id="apellidos" placeholder="Ej: Pérez González">
+                        <span class="error-msg" id="err-apellidos">Campo obligatorio. Solo letras.</span>
+                    </div>
+                    <div>
+                        <label for="telefono">Teléfono *</label>
+                        <input type="text" id="telefono" placeholder="Ej: +56912345678">
+                        <span class="error-msg" id="err-telefono">Teléfono inválido.</span>
+                    </div>
+                    <div class="full">
+                        <label for="direccion">Dirección *</label>
+                        <input type="text" id="direccion" placeholder="Ej: Av. Libertador 1234, Depto 502">
+                        <span class="error-msg" id="err-direccion">Campo obligatorio.</span>
+                    </div>
+                    <div>
+                        <label for="ciudad">Ciudad *</label>
+                        <input type="text" id="ciudad" placeholder="Ej: Santiago">
+                        <span class="error-msg" id="err-ciudad">Campo obligatorio.</span>
+                    </div>
+                    <div>
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" placeholder="Ej: correo@dominio.cl">
+                        <span class="error-msg" id="err-email">Email inválido.</span>
+                    </div>
+                    <div>
+                        <label for="fechaNac">Fecha de Nacimiento *</label>
+                        <input type="date" id="fechaNac">
+                        <span class="error-msg" id="err-fechaNac">Fecha inválida.</span>
+                    </div>
+                    <div>
+                        <label for="estadoCivil">Estado Civil *</label>
+                        <select id="estadoCivil">
+                            <option value="">Seleccione...</option>
+                            <option value="Soltero/a">Soltero/a</option>
+                            <option value="Casado/a">Casado/a</option>
+                            <option value="Divorciado/a">Divorciado/a</option>
+                            <option value="Viudo/a">Viudo/a</option>
+                            <option value="Separado/a">Separado/a</option>
+                        </select>
+                        <span class="error-msg" id="err-estadoCivil">Seleccione una opción.</span>
+                    </div>
+                    <div class="full">
+                        <label for="comentarios">Comentarios *</label>
+                        <textarea id="comentarios" rows="3" placeholder="Observaciones médicas relevantes..."></textarea>
+                        <span class="error-msg" id="err-comentarios">Campo obligatorio (máx. 500 caracteres).</span>
+                    </div>
+                </div>
+
+                <div class="btns">
+                    <button type="button" class="btn-guardar" onclick="guardarFicha()">💾 Guardar</button>
+                    <button type="button" class="btn-limpiar" onclick="limpiarFormulario()">🧹 Limpiar</button>
+                    <button type="button" class="btn-cerrar" onclick="cerrarAplicacion()">❌ Cerrar</button>
+                </div>
+            </form>
+
+            <h3 style="margin-top:28px; color:#1565c0;">📋 Registros Almacenados</h3>
+            <div style="overflow-x:auto;">
+                <table id="tablaRegistros">
+                    <thead>
+                        <tr>
+                            <th>Rut</th><th>Nombres</th><th>Apellidos</th><th>Teléfono</th><th>Email</th><th>Ciudad</th><th>Estado Civil</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3>⚠️ Registro Existente</h3>
+            <p>Ya existe una ficha con este Rut. ¿Desea sobrescribir la información?</p>
+            <div class="modal-btns">
+                <button class="btn-guardar" onclick="confirmarSobrescritura(true)">Sí, sobrescribir</button>
+                <button class="btn-cerrar" onclick="confirmarSobrescritura(false)">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEY = 'fichasMedicas';
+        let tempFicha = null;
+
+        function getDB() { return JSON.parse(localStorage.getItem(DB_KEY)) || []; }
+        function setDB(data) { localStorage.setItem(DB_KEY, JSON.stringify(data)); renderTabla(); }
+
+        function mostrarToast(msg, tipo='success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.className = 'toast ' + tipo; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        function validarRut(rut) {
+            if (!rut) return false;
+            const clean = rut.replace(/\./g, '').replace('-', '').toUpperCase();
+            const cuerpo = clean.slice(0, -1); const dv = clean.slice(-1);
+            if (cuerpo.length < 7) return false;
+            let suma = 0, mul = 2;
+            for (let i = cuerpo.length - 1; i >= 0; i--) {
+                suma += parseInt(cuerpo[i]) * mul;
+                mul = mul === 7 ? 2 : mul + 1;
+            }
+            const res = 11 - (suma % 11);
+            const dvCalc = res === 11 ? '0' : res === 10 ? 'K' : String(res);
+            return dvCalc === dv;
+        }
+
+        function validarEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function validarTelefono(tel) {
+            return /^\+?[0-9\s]{8,15}$/.test(tel);
+        }
+
+        function setError(id, show) {
+            const el = document.getElementById(id);
+            const err = document.getElementById('err-' + id);
+            if (!el || !err) return false;
+            if (show) { el.classList.add('error'); err.style.display = 'block'; return false; }
+            else { el.classList.remove('error'); err.style.display = 'none'; return true; }
+        }
+
+        function validarFormulario() {
+            let ok = true;
+            const rut = document.getElementById('rut').value.trim();
+            ok &= setError('rut', !rut || !validarRut(rut));
+            const nom = document.getElementById('nombres').value.trim();
+            ok &= setError('nombres', !nom || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nom));
+            const ape = document.getElementById('apellidos').value.trim();
+            ok &= setError('apellidos', !ape || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(ape));
+            const dir = document.getElementById('direccion').value.trim();
+            ok &= setError('direccion', !dir);
+            const ciu = document.getElementById('ciudad').value.trim();
+            ok &= setError('ciudad', !ciu);
+            const tel = document.getElementById('telefono').value.trim();
+            ok &= setError('telefono', !tel || !validarTelefono(tel));
+            const ema = document.getElementById('email').value.trim();
+            ok &= setError('email', !ema || !validarEmail(ema));
+            const fec = document.getElementById('fechaNac').value;
+            ok &= setError('fechaNac', !fec || new Date(fec) > new Date());
+            const ec = document.getElementById('estadoCivil').value;
+            ok &= setError('estadoCivil', !ec);
+            const com = document.getElementById('comentarios').value.trim();
+            ok &= setError('comentarios', !com || com.length > 500);
+            return ok;
+        }
+
+        function guardarFicha() {
+            if (!validarFormulario()) {
+                mostrarToast('⚠️ Corrija los errores marcados antes de guardar.', 'error');
+                return;
+            }
+            const ficha = {
+                rut: document.getElementById('rut').value.trim(),
+                nombres: document.getElementById('nombres').value.trim(),
+                apellidos: document.getElementById('apellidos').value.trim(),
+                direccion: document.getElementById('direccion').value.trim(),
+                ciudad: document.getElementById('ciudad').value.trim(),
+                telefono: document.getElementById('telefono').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                fechaNac: document.getElementById('fechaNac').value,
+                estadoCivil: document.getElementById('estadoCivil').value,
+                comentarios: document.getElementById('comentarios').value.trim()
+            };
+            const db = getDB();
+            const existe = db.findIndex(x => x.rut === ficha.rut);
+            if (existe >= 0) {
+                tempFicha = { ficha, index: existe };
+                document.getElementById('modalOverlay').style.display = 'flex';
+            } else {
+                db.push(ficha);
+                setDB(db);
+                mostrarToast('✅ Ficha guardada correctamente.');
+                limpiarFormulario();
+            }
+        }
+
+        function confirmarSobrescritura(aceptar) {
+            document.getElementById('modalOverlay').style.display = 'none';
+            if (aceptar && tempFicha) {
+                const db = getDB();
+                db[tempFicha.index] = tempFicha.ficha;
+                setDB(db);
+                mostrarToast('✅ Ficha sobrescrita correctamente.');
+                limpiarFormulario();
+            }
+            tempFicha = null;
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('fichaForm').reset();
+            document.querySelectorAll('.error').forEach(e => e.classList.remove('error'));
+            document.querySelectorAll('.error-msg').forEach(e => e.style.display = 'none');
+        }
+
+        function cerrarAplicacion() {
+            if (confirm('¿Está seguro que desea cerrar la aplicación?')) {
+                window.open('', '_self', '');
+                window.close();
+                if (!window.closed) window.location.href = 'about:blank';
+            }
+        }
+
+        function buscarPorApellido() {
+            const filtro = document.getElementById('buscarApellido').value.trim().toLowerCase();
+            renderTabla(filtro);
+        }
+
+        function limpiarBusqueda() {
+            document.getElementById('buscarApellido').value = '';
+            renderTabla();
+        }
+
+        function eliminarFicha(rut) {
+            if (!confirm('¿Eliminar permanentemente esta ficha?')) return;
+            const db = getDB().filter(x => x.rut !== rut);
+            setDB(db);
+            mostrarToast('🗑️ Ficha eliminada.', 'error');
+        }
+
+        function cargarFicha(rut) {
+            const f = getDB().find(x => x.rut === rut);
+            if (!f) return;
+            document.getElementById('rut').value = f.rut;
+            document.getElementById('nombres').value = f.nombres;
+            document.getElementById('apellidos').value = f.apellidos;
+            document.getElementById('direccion').value = f.direccion;
+            document.getElementById('ciudad').value = f.ciudad;
+            document.getElementById('telefono').value = f.telefono;
+            document.getElementById('email').value = f.email;
+            document.getElementById('fechaNac').value = f.fechaNac;
+            document.getElementById('estadoCivil').value = f.estadoCivil;
+            document.getElementById('comentarios').value = f.comentarios;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderTabla(filtroApellido = '') {
+            const tbody = document.querySelector('#tablaRegistros tbody');
+            tbody.innerHTML = '';
+            let data = getDB();
+            if (filtroApellido) {
+                data = data.filter(x => x.apellidos.toLowerCase().includes(filtroApellido.toLowerCase()));
+            }
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;">Sin registros</td></tr>';
+                return;
+            }
+            data.forEach(f => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${f.rut}</td>
+                    <td>${f.nombres}</td>
+                    <td>${f.apellidos}</td>
+                    <td>${f.telefono}</td>
+                    <td>${f.email}</td>
+                    <td>${f.ciudad}</td>
+                    <td>${f.estadoCivil}</td>
+                    <td>
+                        <button onclick="cargarFicha('${f.rut}')" style="background:#1565c0;color:#fff;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;">Editar</button>
+                        <button onclick="eliminarFicha('${f.rut}')" style="background:#c62828;color:#fff;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;margin-left:4px;">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.onload = renderTabla;
+    </script>
+</body>
+</html>
