@@ -272,11 +272,26 @@
             document.querySelectorAll('.error-msg').forEach(e => e.style.display = 'none');
         }
 
+        // ============================================================
+        // CORRECCIÓN APLICADA — Función cerrarAplicacion()
+        // ============================================================
+        // DEFECTO DETECTADO (CN-10):
+        // El código original redirigía silenciosamente a 'about:blank'
+        // cuando window.close() era bloqueado por el navegador, sin
+        // informar al usuario del motivo.
+        //
+        // CORRECCIÓN:
+        // Se agrega un alert() informativo ANTES de la redirección,
+        // para que el usuario comprenda qué ocurrió y qué puede hacer.
+        // ============================================================
         function cerrarAplicacion() {
             if (confirm('¿Está seguro que desea cerrar la aplicación?')) {
                 window.open('', '_self', '');
                 window.close();
-                if (!window.closed) window.location.href = 'about:blank';
+                if (!window.closed) {
+                    alert('No fue posible cerrar la ventana automáticamente. La aplicación se redirigirá a una página en blanco. Puede cerrar la pestaña manualmente.');
+                    window.location.href = 'about:blank';
+                }
             }
         }
 
